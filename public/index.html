@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<title>Customer Service Ticket System</title>
+	<style>
+		body {
+			font-family: Arial, sans-serif;
+			margin: 20px;
+		}
+
+		h1,
+		h2 {
+			color: #333;
+		}
+
+		section {
+			margin-bottom: 25px;
+			padding: 15px;
+			border: 1px solid #ccc;
+			border-radius: 5px;
+		}
+
+		input,
+		select,
+		button {
+			margin: 5px 0;
+			padding: 8px;
+			font-size: 14px;
+			display: block;
+		}
+
+		table {
+			width: 100%;
+			border-collapse: collapse;
+			margin-top: 10px;
+		}
+
+		th,
+		td {
+			border: 1px solid #ddd;
+			padding: 8px;
+			text-align: left;
+		}
+
+		th {
+			background-color: #f2f2f2;
+		}
+
+		.actions {
+			display: flex;
+			gap: 8px;
+		}
+
+		.message {
+			margin-top: 10px;
+			color: #005;
+		}
+	</style>
+</head>
+
+<body>
+	<h1>Customer Service Ticket System</h1>
+
+	<!-- add a new ticket -->
+	<section>
+		<h2>Add Ticket to Queue</h2>
+		<form id="addTicketForm">
+			<label for="customer_name">Customer Name:</label>
+			<input type="text" id="customer_name" required>
+
+			<label for="problem">Problem:</label>
+			<input type="text" id="problem" required>
+
+			<label for="priority">Priority:</label>
+			<select id="priority" required>
+        <option value="Normal">Normal</option>
+        <option value="High">High</option>
+        <option value="Emergency">Emergency</option>
+      </select>
+			<button type="submit">Add Ticket</button>
+		</form>
+		<div id="addMessage" class="message"></div>
+	</section>
+
+	<!-- find a ticket by id -->
+	<section>
+		<h2>Find a Ticket by ID</h2>
+		<div class="actions">
+			<input type="number" id="ticketIdInput" placeholder="Enter ticket ID">
+			<button id="lookupTicketBtn">Lookup</button>
+		</div>
+		<div id="lookupMessage" class="message"></div>
+	</section>
+
+	<!-- view all tickets -->
+	<section>
+		<h2>All Tickets</h2>
+		<button id="refreshTicketsBtn">Refresh Tickets</button>
+		<table>
+			<thead>
+				<tr>
+					<th>ID</th>
+					<th>Customer</th>
+					<th>Problem</th>
+					<th>Priority</th>
+					<th>Status</th>
+					<th>Action</th>
+				</tr>
+			</thead>
+			<tbody id="ticketTableBody"></tbody>
+		</table>
+	</section>
+
+	<!-- delete a ticket by ID -->
+	<section>
+		<h2>Delete a Ticket by ID</h2>
+		<div class="actions">
+			<input type="number" id="deleteTicketIdInput" placeholder="Enter ticket ID to delete">
+			<button id="deleteTicketBtn">Delete</button>
+		</div>
+		<div id="deleteMessage" class="message"></div>
+	</section>
+
+	<script>
+		const API_URL = '/api/tickets';
+    async function loadTickets() {
+      const res = await fetch(API_URL);
+      const data = await res.json();
+      const tbody = document.getElementById('ticketTableBody');
+      tbody.innerHTML = '';
+      data.forEach(p => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${p.id}</td>
+            <td>${p.customer_name}</td>
+            <td>${p.problem}</td>
+            <td>${p.priority}</td>
+            <td>${p.status}</td>
+            <td><button onclick="deleteTicket('${p.id}')">Delete</button></td>
+          </tr>`;
+      });
+    }
+    
+    document.getElementById('addTicketForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const customer_name = document.getElementById('customer_name').value;
+      const problem = document.getElementById('problem').value;
+      const priority = document.getElementById('priority').value;
+
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'json' },
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customer_name, problem, priority })
+      });
+
+      e.target.reset();
+      loadTickets();
+    });
+
+    async function searchTicket() {
+      const id = document.getElementById('searchId').value;
+      const res = await fetch(`${API_URL}/${id}`);
+      const resultDiv = document.getElementById('searchResult');
+      if (res.ok) {
+        const p = await res.json();
+        resultDiv.innerHTML = `<p><strong>Found:</strong> Queue #${p.queue_number} - ${p.customer_name} (${p.problem}) - Priority: ${p.priority}</p>`;
+      } else {
+        resultDiv.innerHTML = '<p style="color:red;">Ticket not found.</p>';
+      }
+    }
+
+    async function deleteTicket(id) {
+      await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+      loadTickets();
+    }
+    loadTickets();
+
+	</script>
+</body>
+</html>
